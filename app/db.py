@@ -16,4 +16,7 @@ def post_exists(post_id: str) -> bool:
     return posts.find_one({"id": post_id}) is not None
 
 def get_all_posts():
-    return list(posts.find().sort("created_utc", -1))
+    raw_posts = list(posts.find().sort("created_at", -1))
+    for post in raw_posts:
+        post["_id"] = str(post["_id"])  # or `del post["_id"]` to remove
+    return raw_posts

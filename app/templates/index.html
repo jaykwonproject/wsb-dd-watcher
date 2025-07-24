@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WSB DD Watcher</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --text: #333;
+      --card-bg: #fff;
+      --card-shadow: rgba(0, 0, 0, 0.06);
+      --ticker: #007BFF;
+      --tab-bg: #e2e6ea;
+      --tab-active: #007BFF;
+      --sentiment-bg: #e6f2ff;
+    }
+
+    body.dark {
+      --bg: #121212;
+      --text: #e0e0e0;
+      --card-bg: #1e1e1e;
+      --card-shadow: rgba(255, 255, 255, 0.08);
+      --ticker: #4dabf7;
+      --tab-bg: #333;
+      --tab-active: #4dabf7;
+      --sentiment-bg: #1a3c60;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .toggle-dark {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      background: var(--tab-bg);
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 999;
+    }
+
+    .post {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px var(--card-shadow);
+      transition: box-shadow 0.3s ease;
+    }
+
+    .post:hover {
+      box-shadow: 0 4px 12px var(--card-shadow);
+    }
+
+    .tickers {
+      font-weight: bold;
+      font-size: 16px;
+      color: var(--ticker);
+      margin-bottom: 8px;
+    }
+
+    .timestamp {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 12px;
+    }
+
+    .sentiment {
+      font-size: 14px;
+      background: var(--sentiment-bg);
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+
+    .summary {
+      margin-bottom: 16px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    ul {
+      padding-left: 18px;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    .tabs {
+      margin: 14px 0;
+    }
+
+    .tab-button {
+      padding: 6px 12px;
+      margin-right: 6px;
+      border: none;
+      background-color: var(--tab-bg);
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .tab-button.active {
+      background-color: var(--tab-active);
+      color: white;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    .no-data {
+      font-style: italic;
+      color: #999;
+      margin-top: 10px;
+    }
+
+    h3 {
+      margin-top: 20px;
+      font-size: 18px;
+      color: var(--text);
+    }
+    .reddit-link a {
+      display: inline-block;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--ticker);
+      text-decoration: none;
+    }
+    .reddit-link a:hover {
+      text-decoration: underline;
+    }
+
+  </style>
+</head>
+<body>
+  <button class="toggle-dark" onclick="document.body.classList.toggle('dark')">☀️ / 🌙</button>
+  <h1>WSB DD Posts</h1>
+
+  {% for post in posts %}
+    <div class="post">
+      <div class="tickers">{{ post.tickers | join(', ') }}</div>
+      <div class="timestamp">Posted on {{ post.timestamp }}</div>
+      {% if post.url %}
+        <div class="reddit-link">
+          <a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">🔗 View on Reddit</a>
+        </div>
+      {% endif %}
+      {% if post.op_sentiment %}
+        <div class="sentiment">Sentiment: {{ post.op_sentiment }}</div>
+      {% endif %}
+
+      {% if post.summary %}
+        <div class="summary">
+          <strong>TL;DR:</strong>
+          {% if post.pros_list %}
+            <p><strong>Pros:</strong></p>
+            <ul>
+              {% for item in post.pros_list %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if post.cons_list %}
+            <p><strong>Cons:</strong></p>
+            <ul>
+              {% for item in post.cons_list %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if post.sentiment %}
+            <p class="sentiment">{{ post.sentiment }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if post.pros_cons %}
+        {% set pros_split = post.pros_cons.split('Cons:')[0].replace('Pros:', '').strip().split('\n') %}
+        {% set cons_split = post.pros_cons.split('Cons:')[1].strip().split('\n') if 'Cons:' in post.pros_cons else [] %}
+        <div class="summary">
+          <strong>Pros:</strong>
+          <ul>
+            {% for p in pros_split %}
+              {% if p.strip() %}<li>{{ p.strip() }}</li>{% endif %}
+            {% endfor %}
+          </ul>
+          <strong>Cons:</strong>
+          <ul>
+            {% for c in cons_split %}
+              {% if c.strip() %}<li>{{ c.strip() }}</li>{% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if post.tickers and post.stock_data %}
+        {% for ticker in post.tickers %}
+          <h3>{{ ticker }} Price Chart</h3>
+          {% if post.stock_data[ticker] %}
+            <div class="tabs" data-ticker="{{ ticker }}">
+              {% for label in ['1d', '1w', '1m', '3m', '1y', 'max'] %}
+                <button class="tab-button {% if loop.first %}active{% endif %}" data-range="{{ label }}">{{ label }}</button>
+              {% endfor %}
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-{{ post.id }}-{{ ticker }}"></canvas>
+            </div>
+          {% else %}
+            <div class="no-data">No stock data available for {{ ticker }}</div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <script>
+    const posts = {{ posts | tojson }};
+
+    posts.forEach(post => {
+      if (!post.tickers || !post.stock_data) return;
+
+      post.tickers.forEach(ticker => {
+        const stockData = post.stock_data[ticker];
+        if (!stockData) return;
+
+        const canvasId = `chart-${post.id}-${ticker}`;
+        const ctx = document.getElementById(canvasId).getContext('2d');
+
+        let currentRange = '1d';
+        let chartInstance;
+
+        const drawChart = (range) => {
+          const data = stockData[range];
+          if (!data) return;
+
+          const labels = data.map(d => d.time);
+          const prices = data.map(d => d.price);
+
+          if (chartInstance) chartInstance.destroy();
+          chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                data: prices,
+                borderColor: '#007BFF',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false }
+              },
+              scales: {
+                x: {
+                  ticks: { maxTicksLimit: 8 },
+                  grid: { display: false }
+                },
+                y: {
+                  beginAtZero: false,
+                  grid: { display: true, color: '#eee' }
+                }
+              }
+            }
+          });
+        };
+
+        drawChart(currentRange);
+
+        const tabButtons = document.querySelectorAll(`.tabs[data-ticker="${ticker}"] .tab-button`);
+        tabButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            drawChart(btn.dataset.range);
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>
