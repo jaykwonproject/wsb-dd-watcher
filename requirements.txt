@@ -1,0 +1,7 @@
+praw
+openai
+pymongo
+dnspython
+flask
+python-dotenv
+requests
