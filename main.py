@@ -6,38 +6,15 @@ from app.notifier import send_email, send_discord
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 def run():
     print("🔍 Fetching latest DD posts...")
     posts = fetch_recent_dd_posts()
 
-    for post in posts:
-        if not is_eligible(post):
-            continue
-        if post_exists(post["id"]):
-            continue
-
-        print(f"\n📌 New Post: {post['title']}")
-
-        summary = summarize_post(post["title"], post["selftext"])
-        if not summary:
-            print("⚠️ Skipping due to summary error.")
-            continue
-
-        recipients = os.getenv("EMAIL_RECIPIENT").split(",")
-        webhook_url = os.getenv("DISCORD_WEBHOOK")
-
-        send_email(post, summary, recipients)
-        send_discord(post, summary, webhook_url)
-
-        # Store in MongoDB
-        post["summary"] = summary
-        post["notified_via"] = ["email", "discord"]
-        save_post(post)
-
-    print("🔍 Fetching latest DD posts...")
-    posts = fetch_recent_dd_posts()
+    recipients = os.getenv("EMAIL_RECIPIENT", "").split(",")
+    webhook_url = os.getenv("DISCORD_WEBHOOK")
 
     for post in posts:
         if not is_eligible(post):
@@ -55,11 +32,12 @@ def run():
             print("⚠️ Skipping due to summary error.")
             continue
 
-        email_subject = f"🧠 New WSB DD: {post['title']}"
-        email_body = f"{post['title']}\n\nLink: {post['permalink']}\nUpvotes: {post['score']} | Comments: {post['num_comments']}\n\n{summary}"
-        recipients = os.getenv("EMAIL_RECIPIENT").split(",")
-        send_email(email_subject, email_body,recipients)
-        send_discord(f"**{post['title']}**\n{post['permalink']}\n\n{summary}")
+        # Send notifications
+        try:
+            send_email(post, summary, recipients)
+            send_discord(post, summary, webhook_url)
+        except Exception as e:
+            print(f"❌ Notification failed: {e}")
 
         # Store in MongoDB
         post["summary"] = summary
