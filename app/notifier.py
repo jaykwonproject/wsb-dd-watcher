@@ -7,18 +7,23 @@ import os
 def send_email(post, summary, recipients):
     subject = f"🧠 New DD Alert: {post['title']}"
 
-    body = f"""🧠 New DD Alert: {post['title']}
+    # Build the body as a regular string, not all inside f-string
+    lines = [
+        f"🧠 New DD Alert: {post['title']}",
+        "",
+        f"📅 Posted on {post['created_at']}",
+        f"📈 Tickers: {post['tickers'] or 'None'}",
+        f"🤔 Sentiment: {extract_sentiment(summary)}",
+        "",
+        f"🔎 TL;DR: {extract_tldr(summary)}",
+        "",
+        extract_section(summary, 'Pros', prefix='👍 Pros:\n'),
+        extract_section(summary, 'Cons', prefix='👎 Cons:\n'),
+        "",
+        f"🔗 Link: {post['url']}"
+    ]
 
-📅 Posted on {post['created_at']}  
-📈 Tickers: {post['tickers'] or 'None'}  
-🤔 Sentiment: {extract_sentiment(summary)}
-
-🔎 TL;DR: {extract_tldr(summary)}
-
-{extract_section(summary, 'Pros', prefix='👍 Pros:\n')}
-{extract_section(summary, 'Cons', prefix='👎 Cons:\n')}
-
-🔗 Link: {post['url']}"""
+    body = "\n".join(lines)
 
     msg = MIMEText(body)
     msg["Subject"] = subject
@@ -30,20 +35,16 @@ def send_email(post, summary, recipients):
         server.sendmail(msg["From"], recipients, msg.as_string())
 
 def send_discord(post, summary, webhook_url):
-    content = f"""**🧠 New DD Alert: {post['title']}**  
-📅 {post['created_at']}  
-📈 Tickers: {post['tickers'] or 'None'}  
-🤔 Sentiment: {extract_sentiment(summary)}
-
-🔎 **TL;DR:** {extract_tldr(summary)}
-
-**Pros:**  
-{extract_section(summary, 'Pros')}
-
-**Cons:**  
-{extract_section(summary, 'Cons')}
-
-🔗 {post['url']}"""
+    content = (
+        f"**🧠 New DD Alert: {post['title']}**\n"
+        f"📅 {post['created_at']}\n"
+        f"📈 Tickers: {post['tickers'] or 'None'}\n"
+        f"🤔 Sentiment: {extract_sentiment(summary)}\n\n"
+        f"🔎 **TL;DR:** {extract_tldr(summary)}\n\n"
+        f"**Pros:**\n{extract_section(summary, 'Pros')}\n\n"
+        f"**Cons:**\n{extract_section(summary, 'Cons')}\n\n"
+        f"🔗 {post['url']}"
+    )
 
     data = {"content": content}
     requests.post(webhook_url, json=data)
