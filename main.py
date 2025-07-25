@@ -23,7 +23,10 @@ def run():
             continue
 
         # Add created_at timestamp
-        post["created_at"] = datetime.fromtimestamp(post["created_utc"]).strftime('%Y-%m-%d %H:%M')
+        # Safely add expected keys
+        post["created_at"] = datetime.fromtimestamp(post.get("created_utc", 0)).strftime('%Y-%m-%d %H:%M')
+        post["tickers"] = post.get("tickers", [])
+        post["url"] = f"https://reddit.com{post.get('permalink', '')}"
 
         print(f"\n📌 New Post: {post['title']}")
 
