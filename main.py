@@ -3,6 +3,7 @@ from app.filter import is_eligible
 from app.db import post_exists, save_post
 from app.summarizer import summarize_post
 from app.notifier import send_email, send_discord
+from datetime import datetime
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -43,6 +44,9 @@ def run():
             continue
         if post_exists(post["id"]):
             continue
+
+        # Add created_at timestamp
+        post["created_at"] = datetime.fromtimestamp(post["created_utc"]).strftime('%Y-%m-%d %H:%M')
 
         print(f"\n📌 New Post: {post['title']}")
 
