@@ -9,15 +9,16 @@ You are analyzing a Reddit DD (due diligence) post from r/wallstreetbets.
 Your task:
 1. Begin with a one-sentence TL;DR summary.
 2. Extract 2–3 concise "Pros" and 2–3 "Cons" based only on what is explicitly stated.
-3. Identify any stock tickers (e.g., $TSLA, PLTR) and list them in uppercase without duplicates.
+3. Identify the *primary* stock ticker the post is mainly focused on. Only return ONE ticker in uppercase. If no clear ticker is the main focus, return "None".
 4. Determine overall sentiment: Bullish, Bearish, or Mixed — based on OP's tone and reasoning, not just the facts.
 
+⚠️ DO NOT list multiple tickers. Even if the post mentions several, extract only the one most discussed or analyzed.
 ⚠️ DO NOT speculate beyond the content. Only summarize what’s written.
 
 Format strictly as:
 
 Sentiment: <Bullish|Bearish|Mixed>  
-Tickers: <TSLA, PLTR, etc. or None>  
+Ticker: <TSLA or None>  
 
 TL;DR: <short one-sentence summary>
 
@@ -27,6 +28,7 @@ Pros:
 Cons:
 - ...
 """
+
 
 def summarize_post(title, body):
     try:
