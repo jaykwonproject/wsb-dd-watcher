@@ -14,7 +14,7 @@ def run():
     posts = fetch_recent_dd_posts()
 
     recipients = os.getenv("EMAIL_RECIPIENT", "").split(",")
-    webhook_url = os.getenv("DISCORD_WEBHOOK")
+    webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
 
     for post in posts:
         if not is_eligible(post):
