@@ -34,11 +34,11 @@ def send_discord(post, summary, webhook_url):
 📅 {post['created_at']}  
 📈 Tickers: {post['tickers'] or 'None'}  
 🤔 Sentiment: {extract_sentiment(summary)}
-\n🔎 TL;DR: {extract_tldr(summary)}
+\n🔎 ** TL;DR: {extract_tldr(summary)} **
 
-**{extract_section(summary, 'Pros', prefix='Pros:\n')}**
+{extract_section(summary, 'Pros', prefix='Pros:\n')}
 
-**{extract_section(summary, 'Cons', prefix='Cons:\n')}**
+{extract_section(summary, 'Cons', prefix='Cons:\n')}
 
 🔗 {post['url']}
 """
