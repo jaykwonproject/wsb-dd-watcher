@@ -26,11 +26,11 @@ def send_email(post, summary, recipients):
 
     msg = MIMEText(body)
     msg["Subject"] = subject
-    msg["From"] = formataddr(("DD Watcher", os.getenv("EMAIL_SENDER")))
+    msg["From"] = formataddr(("DD Watcher", os.getenv("SMTP_USERNAME")))
     msg["To"] = ", ".join(recipients)
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(os.getenv("EMAIL_SENDER"), os.getenv("EMAIL_PASSWORD"))
+    with smtplib.SMTP_SSL(os.getenv("SMTP_SERVER"), os.getenv("SMTP_PORT")) as server:
+        server.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD"))
         server.sendmail(msg["From"], recipients, msg.as_string())
 
 def send_discord(post, summary, webhook_url):
