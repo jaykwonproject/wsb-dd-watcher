@@ -11,15 +11,11 @@ def send_email(post, summary, recipients):
 
 📅 Posted on {post['created_at']}  
 📈 Tickers: {post['tickers'] or 'None'}  
-🔍 Sentiment: {extract_sentiment(summary)}
+🤔 Sentiment: {extract_sentiment(summary)}
+\n🔎 TL;DR: {extract_tldr(summary)}
 
-{extract_section(summary, 'TL;DR')}
-
-👍 Pros:
-{extract_section(summary, 'Pros')}
-
-👎 Cons:
-{extract_section(summary, 'Cons')}
+{extract_section(summary, 'Pros', prefix='👍 Pros:\n')}
+{extract_section(summary, 'Cons', prefix='\n👎 Cons:\n')}
 
 🔗 Link: {post['url']}
 """
@@ -29,7 +25,7 @@ def send_email(post, summary, recipients):
     msg["From"] = formataddr(("DD Watcher", os.getenv("SMTP_USERNAME")))
     msg["To"] = ", ".join(recipients)
 
-    with smtplib.SMTP_SSL(os.getenv("SMTP_SERVER"), os.getenv("SMTP_PORT")) as server:
+    with smtplib.SMTP_SSL(os.getenv("SMTP_SERVER"), int(os.getenv("SMTP_PORT"))) as server:
         server.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD"))
         server.sendmail(msg["From"], recipients, msg.as_string())
 
@@ -37,15 +33,12 @@ def send_discord(post, summary, webhook_url):
     content = f"""**🧠 New DD Alert: {post['title']}**  
 📅 {post['created_at']}  
 📈 Tickers: {post['tickers'] or 'None'}  
-{get_sentiment_emoji(summary)} Sentiment: {extract_sentiment(summary)}
+🤔 Sentiment: {extract_sentiment(summary)}
+\n🔎 TL;DR: {extract_tldr(summary)}
 
-**{extract_section(summary, 'TL;DR')}**
+**{extract_section(summary, 'Pros', prefix='Pros:\n')}**
 
-**Pros:**  
-{extract_section(summary, 'Pros')}
-
-**Cons:**  
-{extract_section(summary, 'Cons')}
+**{extract_section(summary, 'Cons', prefix='Cons:\n')}**
 
 🔗 {post['url']}
 """
@@ -59,26 +52,31 @@ def extract_sentiment(summary):
             return line.split(":", 1)[1].strip()
     return "Unknown"
 
-def extract_section(summary, header):
+def extract_section(summary, header, prefix=""):
     lines = summary.splitlines()
     start = None
     collected = []
+
     for i, line in enumerate(lines):
-        if line.lower().startswith(header.lower()):
+        if line.strip().lower().startswith(header.lower()):
             start = i + 1
             break
+
     if start is not None:
         for line in lines[start:]:
-            if line.strip() == "" or ":" in line and not line.strip().startswith("-"):
+            line_strip = line.strip()
+            if not line_strip:
+                continue
+            if ":" in line_strip and not line_strip.startswith(("-", "•")):
                 break
-            collected.append(line.strip("•- ").strip())
-    return "\n".join(f"• {line}" for line in collected)
+            collected.append(line_strip.strip("•- ").strip())
 
-def get_sentiment_emoji(summary):
-    sentiment = extract_sentiment(summary).lower()
-    if "bullish" in sentiment:
-        return "🟢"
-    elif "bearish" in sentiment:
-        return "🔴"
-    else:
-        return "🟡"
+    if collected:
+        return prefix + "\n".join(f"• {line}" for line in collected)
+    return ""
+
+def extract_tldr(summary):
+    for line in summary.splitlines():
+        if line.lower().startswith("tl;dr:"):
+            return line.split(":", 1)[1].strip()
+    return ""

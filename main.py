@@ -6,8 +6,18 @@ from app.notifier import send_email, send_discord
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-
+import re
 load_dotenv()
+
+def extract_tickers(summary):
+    match = re.search(r'Tickers:\s*(.+)', summary)
+    if match:
+        raw = match.group(1).strip()
+        return [t.strip().upper() for t in raw.split(",") if t.strip()]
+    return []
+
+def clean_permalink(permalink):
+    return permalink if permalink.startswith("http") else "https://reddit.com" + permalink
 
 def run():
     print("🔍 Fetching latest DD posts...")
@@ -25,12 +35,13 @@ def run():
         # Add created_at timestamp
         # Safely add expected keys
         post["created_at"] = datetime.fromtimestamp(post.get("created_utc", 0)).strftime('%Y-%m-%d %H:%M')
-        post["tickers"] = post.get("tickers", [])
-        post["url"] = f"https://reddit.com{post.get('permalink', '')}"
-
         print(f"\n📌 New Post: {post['title']}")
 
         summary = summarize_post(post["title"], post["selftext"])
+        post["summary"] = summary
+        post["tickers"] = extract_tickers(summary)
+        post["url"] = clean_permalink(post["permalink"])
+
         if not summary:
             print("⚠️ Skipping due to summary error.")
             continue
